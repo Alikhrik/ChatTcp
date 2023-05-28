@@ -1,7 +1,8 @@
-﻿using ChatTcpLib.DbAccess;
+﻿using ChatTcpLib.Client;
+using ChatTcpLib.DbAccess;
 using ChatTcpLib.Server;
 
-Task listenTask = TcpServer.Listenner();
+Task listenTask = TcpServer.Listener();
 while (true)
 {
     

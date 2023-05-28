@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using System.Collections.ObjectModel;
-using System.Net.Sockets;
-using System.Net;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
-using Client.Command;
-using System.Windows.Input;
+using System.Text;
 using System.Threading;
-using ChatTcpClient.ViewModel;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using ChatTcpClient.Command;
 using ChatTcpLib.Model;
 
-namespace Client.ViewModel
+namespace ChatTcpClient.ViewModel
 {
     public class MainViewModel : ViewModelBase
     {
@@ -21,17 +20,14 @@ namespace Client.ViewModel
         public ObservableCollection<Message> Messages { get; set; }
         public ObservableCollection<User> Users { get; set; }
 
-        string serverIPAddress;
-        public string ServerIPAddress
+        string _serverIpAddress;
+        public string ServerIpAddress
         {
-            get
-            {
-                return serverIPAddress;
-            }
+            get => _serverIpAddress;
             set
             {
-                serverIPAddress = value;
-                OnPropertyChanged(nameof(serverIPAddress));
+                _serverIpAddress = value;
+                OnPropertyChanged(nameof(_serverIpAddress));
             }
         }
         string _clientMessage;
@@ -57,64 +53,66 @@ namespace Client.ViewModel
             }
         }
 
-        User selecipient;
+        private User _selectedRecipient;
         public User SelectedRecipient 
         {
-            get => selecipient;
+            get => _selectedRecipient;
             set
             {
-                selecipient = value;
-                if (selecipient != null)
-                    RefreshMessages(listenner.GetStream(), listenner.ReceiveBufferSize, SelectedRecipient.Name);
+                _selectedRecipient = value;
+                if (_selectedRecipient != null)
+                {
+                    RefreshMessages(_listener.GetStream(), _listener.ReceiveBufferSize, SelectedRecipient.Name);
+                }
             }
         }
 
-        private TcpClient listenner;
+        private readonly TcpClient _listener;
         public MainViewModel()
         {
-            listenner = new();
+            _listener = new();
             Users = new();
             Messages = new();
-            ServerIPAddress = "192.168.0.103";
+            ServerIpAddress = "127.0.0.103";
             ClientMessage = "";
             ClientName = "";
             _synContext = SynchronizationContext.Current!;
         }
 
-        DelegateCommand DelegateConnectCommand;
+        DelegateCommand _delegateConnectCommand;
 
-        DelegateCommand DelegateRefreshCommand;
+        DelegateCommand _delegateRefreshCommand;
 
-        DelegateCommand DelegateNewMessageCommand;
+        DelegateCommand _delegateNewMessageCommand;
 
         public event EventHandler<EventArgs> ErrorEvent;
 
-        public ICommand ConnectCommand => DelegateConnectCommand ??
-                    (DelegateConnectCommand = new(exec => Connect(), can_exec => CanConnect()));
-        bool CanConnect() => listenner == null || ServerIPAddress.Trim().Length > 0 && ClientName.Trim().Length > 0 && !listenner.Connected;
+        public ICommand ConnectCommand => _delegateConnectCommand ??
+                    (_delegateConnectCommand = new(exec => Connect(), can_exec => CanConnect()));
+        bool CanConnect() => ServerIpAddress.Trim().Length > 0 && ClientName.Trim().Length > 0 && !_listener.Connected;
 
-        public ICommand RefreshCommand => DelegateRefreshCommand ??
-                    (DelegateRefreshCommand = new(exec => Refresh(), cen_exec => CanRefresh()));
+        public ICommand RefreshCommand => _delegateRefreshCommand ??
+                    (_delegateRefreshCommand = new(exec => RefreshAsync(), cen_exec => CanRefresh()));
 
-        bool CanRefresh() => listenner != null && listenner.Connected;
+        bool CanRefresh() => _listener.Connected;
 
-        public ICommand NewMessageCommand => DelegateNewMessageCommand ??
-            (DelegateNewMessageCommand = new(exec => NewMessage(), can_exec => CanNewMessege()));
+        public ICommand NewMessageCommand => _delegateNewMessageCommand ??
+            (_delegateNewMessageCommand = new(exec => NewMessageAsync(), can_exec => CanNewMessage()));
 
-        bool CanNewMessege() => ClientMessage.Trim().Length != 0 && SelectedRecipient != null;
+        bool CanNewMessage() => ClientMessage.Trim().Length != 0 && SelectedRecipient != null;
 
         async void Connect()
         {
             await Task.Run(async () => {
                 try
                 {
-                    await listenner.ConnectAsync(IPAddress.Parse(ServerIPAddress), 13542);
-                    RefreshUsers(listenner.GetStream(), listenner.ReceiveBufferSize, ClientName);
+                    await _listener.ConnectAsync(IPAddress.Parse(ServerIpAddress), 13542);
+                    RefreshUsers(_listener.GetStream(), _listener.ReceiveBufferSize, ClientName);
                 }
                 catch (IOException ex)
                 {
                     ErrorEvent.Invoke(ex, EventArgs.Empty);
-                    listenner.Close();
+                    _listener.Close();
                 }
                 catch (Exception ex)
                 {
@@ -123,16 +121,16 @@ namespace Client.ViewModel
             });
         }
 
-        async void Refresh()
+        private async void RefreshAsync()
         {
             await Task.Run(() =>
             {
                 try
                 {
-                    RefreshUsers(listenner.GetStream(), listenner.ReceiveBufferSize, ClientName);
+                    RefreshUsers(_listener.GetStream(), _listener.ReceiveBufferSize, ClientName);
                     if (SelectedRecipient != null)
                     {
-                        RefreshMessages(listenner.GetStream(), listenner.ReceiveBufferSize, SelectedRecipient.Name);
+                        RefreshMessages(_listener.GetStream(), _listener.ReceiveBufferSize, SelectedRecipient.Name);
                     }
                 }
                 catch (IOException ex)
@@ -140,27 +138,7 @@ namespace Client.ViewModel
                     ErrorEvent.Invoke(ex, EventArgs.Empty);
                     _synContext.Send(m => Messages.Clear(), null);
                     _synContext.Send(m => Users.Clear(), null);
-                    listenner.Close();
-                }
-                catch (Exception ex)
-                {
-                    ErrorEvent.Invoke(ex, EventArgs.Empty);
-                }
-            });
-        }
-        async void NewMessage()
-        {
-            await Task.Run(() => {
-                try
-                {
-                    newMessage(listenner.GetStream(), SelectedRecipient.Name, ClientMessage);
-                }
-                catch (IOException ex)
-                {
-                    ErrorEvent.Invoke(ex, EventArgs.Empty);
-                    _synContext.Send(m => Messages.Clear(), null);
-                    _synContext.Send(m => Users.Clear(), null);
-                    listenner.Close();
+                    _listener.Close();
                 }
                 catch (Exception ex)
                 {
@@ -169,78 +147,103 @@ namespace Client.ViewModel
             });
         }
 
-        void newMessage(NetworkStream netStream, string RecipientName, string Message)
+        private async void NewMessageAsync()
         {
-            byte[] buffer_Write = Encoding.Default.GetBytes("newmesg" + " " + RecipientName + " " + Message);
-            netStream.Write(buffer_Write, 0, buffer_Write.Length);
+            await Task.Run(() => {
+                try
+                {
+                    NewMessage(_listener.GetStream(), SelectedRecipient.Name, ClientMessage);
+                }
+                catch (IOException ex)
+                {
+                    ErrorEvent.Invoke(ex, EventArgs.Empty);
+                    _synContext.Send(m => Messages.Clear(), null);
+                    _synContext.Send(m => Users.Clear(), null);
+                    _listener.Close();
+                }
+                catch (Exception ex)
+                {
+                    ErrorEvent.Invoke(ex, EventArgs.Empty);
+                }
+            });
+        }
+
+        void NewMessage(NetworkStream netStream, string recipientName, string message)
+        {
+            byte[] bufferWrite = Encoding.Default.GetBytes("newmesg" + " " + recipientName + " " + message);
+            netStream.Write(bufferWrite, 0, bufferWrite.Length);
             Message msg = new();
-            msg.Recipient.Name = RecipientName;
+            msg.Recipient.Name = recipientName;
             msg.Sender.Name = ClientName;
-            msg.Text = Message;
+            msg.Text = message;
             _synContext.Send(m => Messages.Add(msg), null);
         }
-        void RefreshUsers(NetworkStream netStream, int BufferSize, string ClientName)
+        void RefreshUsers(NetworkStream netStream, int bufferSize, string clientName)
         {
-            byte[] buffer_Read = new byte[BufferSize];
-            var name = Encoding.Default.GetBytes("refuser" + " " + ClientName + " ");
+            byte[] bufferRead = new byte[bufferSize];
+            var name = Encoding.Default.GetBytes("refuser" + " " + clientName + " ");
             netStream.Write(name, 0, name.Length);
             int bytesRead;
-            bytesRead = netStream.Read(buffer_Read);
+            bytesRead = netStream.Read(bufferRead);
             if (bytesRead == 0)
             {
                 netStream.Close();
                 throw new IOException("Server disconnected");
             }
-            using var ms = new MemoryStream(buffer_Read);
+            using var ms = new MemoryStream(bufferRead);
             BinaryFormatter bf = new();
 #pragma warning disable SYSLIB0011
-            List<User> list_users = bf.Deserialize(ms) as List<User>;
+            List<User> listUsers = bf.Deserialize(ms) as List<User>;
 #pragma warning restore SYSLIB0011
             bool flag;
-            foreach (var list_user in list_users)
-            {
-                flag = true;
-                if (Users.Count == 0)
+            if (listUsers != null)
+                foreach (var listUser in listUsers)
                 {
-                    _synContext.Send(p => Users.Add(list_user), null);
-                    continue;
-                }
-                foreach (var user in Users)
-                {
-                    if (user.Name == list_user.Name)
+                    flag = true;
+                    if (Users.Count == 0)
                     {
-                        flag = false;
-                        break;
+                        _synContext.Send(p => Users.Add(listUser), null);
+                        continue;
                     }
+
+                    foreach (var user in Users)
+                    {
+                        if (user.Name == listUser.Name)
+                        {
+                            flag = false;
+                            break;
+                        }
+                    }
+
+                    if (flag)
+                        _synContext.Send(p => Users.Add(listUser), null);
                 }
-                if (flag)
-                    _synContext.Send(p => Users.Add(list_user), null);
-            }
         }
 
-        async void RefreshMessages(NetworkStream netStream, int BufferSize, string RecipientName)
+        async void RefreshMessages(NetworkStream netStream, int bufferSize, string recipientName)
         {
             await Task.Run(() => {
-                byte[] buffer_Read = new byte[BufferSize];
+                byte[] bufferRead = new byte[bufferSize];
                 int bytesRead;
-                byte[] buffer_Write = Encoding.Default.GetBytes("refmesg" + " " + RecipientName + " ");
-                netStream.Write(buffer_Write, 0, buffer_Write.Length);
-                bytesRead = netStream.Read(buffer_Read);
+                byte[] bufferWrite = Encoding.Default.GetBytes("refmesg" + " " + recipientName + " ");
+                netStream.Write(bufferWrite, 0, bufferWrite.Length);
+                bytesRead = netStream.Read(bufferRead);
                 if (bytesRead == 0)
                 {
                     netStream.Close();
                     throw new IOException("Server disconnected");
                 }
-                using var ms = new MemoryStream(buffer_Read);
+                using var ms = new MemoryStream(bufferRead);
                 BinaryFormatter bf = new();
 #pragma warning disable SYSLIB0011
                 List<Message> messages = bf.Deserialize(ms) as List<Message>;
 #pragma warning restore SYSLIB0011
                 _synContext.Send(m => Messages.Clear(), null);
-                foreach (var message in messages)
-                {
-                    _synContext.Send(m => Messages.Add(message), null);
-                }
+                if (messages != null)
+                    foreach (var message in messages)
+                    {
+                        _synContext.Send(m => Messages.Add(message), null);
+                    }
             });
         }
     }

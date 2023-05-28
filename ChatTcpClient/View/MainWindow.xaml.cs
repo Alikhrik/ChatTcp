@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows;
-using Client.ViewModel;
+using ChatTcpClient.ViewModel;
 
 namespace ChatTcpClient.View
 {

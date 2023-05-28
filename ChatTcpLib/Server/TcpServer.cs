@@ -8,13 +8,13 @@ using ChatTcpLib.Model;
 
 namespace ChatTcpLib.Server;
 
-public class TcpServer
+public abstract class TcpServer
 {
-    public static async Task Listenner()
+    public static async Task Listener()
     {
         try
         {
-            Console.Write("Enter server sql name or (def) for default name: ");
+            Console.Write("Enter server sql name: ");
             var sqlServerName = Console.ReadLine();
 
             if (sqlServerName == "def")
@@ -29,7 +29,7 @@ public class TcpServer
                 while (true)
                 {
                     var client = await listener.AcceptTcpClientAsync();
-                    Console.WriteLine("Server caught client:");
+                    Console.WriteLine($"Server caught client: {client.Client.RemoteEndPoint}");
                     Handler(client, chatTcpContext);
                 }
             }

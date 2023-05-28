@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace Client.Command
+namespace ChatTcpClient.Command
 {
     internal class DelegateCommand : ICommand
     {
@@ -37,7 +33,7 @@ namespace Client.Command
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        Action<object> _execute;
-        Predicate<object> _canExecute;
+        readonly Action<object> _execute;
+        readonly Predicate<object> _canExecute;
     }
 }
