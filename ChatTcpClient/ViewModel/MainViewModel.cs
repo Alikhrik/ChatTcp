@@ -172,10 +172,7 @@ namespace ChatTcpClient.ViewModel
         {
             byte[] bufferWrite = Encoding.Default.GetBytes("newmesg" + " " + recipientName + " " + message);
             netStream.Write(bufferWrite, 0, bufferWrite.Length);
-            Message msg = new();
-            msg.Recipient.Name = recipientName;
-            msg.Sender.Name = ClientName;
-            msg.Text = message;
+            Message msg = Message.NewMessage(new User(recipientName), message);
             _synContext.Send(m => Messages.Add(msg), null);
         }
         void RefreshUsers(NetworkStream netStream, int bufferSize, string clientName)

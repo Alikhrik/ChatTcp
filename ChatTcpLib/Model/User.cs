@@ -7,7 +7,9 @@ namespace ChatTcpLib.Model;
 [Serializable]
 public class User
 {
-    [NotMapped] private string _name;
+    [NotMapped]
+    private string _name;
+    [DataMember]
     public int Id { get; set; }
     [DataMember]
     public string Name
@@ -19,10 +21,10 @@ public class User
             OnPropertyChanged(nameof(_name));
         }
     }
-    public ICollection<Message> MessageSender { get; set; }
-    public ICollection<Message> MessageRecipient { get; set; }
+    public ICollection<Message>? MessageSender { get; set; }
+    public ICollection<Message>? MessageRecipient { get; set; }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged(string propertyName)
     {
@@ -33,8 +35,9 @@ public class User
         return Name;
     }
 
-    public User()
+    public User(string name)
     {
+        _name = name;
         MessageSender = new HashSet<Message>();
         MessageRecipient = new HashSet<Message>();
     }

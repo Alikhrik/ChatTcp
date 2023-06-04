@@ -8,7 +8,7 @@ using ChatTcpLib.Model;
 
 namespace ChatTcpLib.Server;
 
-public abstract class TcpServer
+internal abstract class TcpServer
 {
     public static async Task Listener()
     {
@@ -107,8 +107,7 @@ public abstract class TcpServer
             select users;
         if (!u.Any())
         {
-            User newUser = new();
-            newUser.Name = clientName;
+            User newUser = new(clientName);
             context.Users.Add(newUser);
             context.SaveChanges();
         }
@@ -149,10 +148,10 @@ public abstract class TcpServer
         var recipient = from user in context.Users
             where user.Name == recipientName
             select user;
-        Message newMessage = new();
-        newMessage.Sender = sender.Single();
-        newMessage.Recipient = recipient.Single();
-        newMessage.Text = message;
+        Message newMessage = new(sender.Single(), recipient.Single())
+        {
+            Text = message
+        };
         context.Messages.Add(newMessage);
         context.SaveChanges();
     }

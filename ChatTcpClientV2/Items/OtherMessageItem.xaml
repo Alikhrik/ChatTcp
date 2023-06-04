@@ -1,0 +1,13 @@
+﻿<ListBoxItem x:Class="ChatTcpClientV2.Items.OtherMessageItem"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="clr-namespace:ChatTcpClientV2.Items"
+      d:DataContext="{d:DesignInstance local:OtherMessageItem}"
+      mc:Ignorable="d" Margin="0" Background="White" BorderBrush="LightGray">
+    <StackPanel>
+        <TextBlock Text="{Binding Sender, Mode=TwoWay}"/>
+        <TextBlock Text="{Binding Text, Mode=TwoWay}"/>
+    </StackPanel>
+</ListBoxItem>

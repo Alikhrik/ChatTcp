@@ -7,25 +7,22 @@ namespace ChatTcpLib.Model;
 [Serializable]
 public sealed class Message : INotifyPropertyChanged
 {
-    public int Id { get; set; }
-    [DataMember]
-    public User Sender { get; set; }
+    [NotMapped] private string? _text;
+    
+    [DataMember] public int Id { get; internal set; }
+    [DataMember] public User Sender { get; internal set; } = null!;
 
-    [NotMapped] private string _text;
-
-    [DataMember]
-    public string Text
+    [DataMember] public string? Text
     { 
         get => _text;
-        set
+        internal set
         {
             _text = value;
             OnPropertyChanged(nameof(_text));
         }
     }
 
-    [DataMember]
-    public User Recipient { get; set; }
+    [DataMember] public User Recipient { get; internal set; } = null!;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -37,9 +34,23 @@ public sealed class Message : INotifyPropertyChanged
     {
         return Sender.Name + ":    " + Text;
     }
-    public Message()
+    public Message(User sender, User recipient)
     {
-        Sender = new User();
-        Recipient = new User();
+        Sender = sender;
+        Recipient = recipient;
+    }
+
+    public static Message NewMessage(User recipient, string text)
+    {
+        return new Message
+        {
+            Recipient = recipient,
+            Text = text
+        };
+    }
+
+    internal Message() // to DbContext
+    {
+        
     }
 }

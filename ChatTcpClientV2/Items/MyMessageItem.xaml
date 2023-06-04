@@ -1,0 +1,13 @@
+﻿<ListBoxItem x:Class="ChatTcpClientV2.Items.MyMessageItem"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="clr-namespace:ChatTcpClientV2.Items"
+      d:DataContext="{d:DesignInstance local:MyMessageItem}"
+      mc:Ignorable="d" Margin="0">
+    <StackPanel>
+        <TextBlock/>
+        <TextBlock HorizontalAlignment="Right" Text="{Binding Text, Mode=OneWay}"/>
+    </StackPanel>
+</ListBoxItem>
